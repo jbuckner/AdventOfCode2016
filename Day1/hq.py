@@ -4,6 +4,7 @@
 f = open('input.txt', 'r')
 directions = [x.strip() for x in f.read().split(',')]
 headings = ['N', 'E', 'S', 'W']
+visited = []
 
 x = 0
 y = 0
@@ -25,12 +26,28 @@ for direction in directions:
         heading = headings[heading_index]
 
     if heading == 'N':
+        for i in range(1, distance):
+            if (x, y + i) in visited:
+                print "Found Twice!", x, y + i, abs(x) + abs(y + i)
+            visited.append((x, y + i))
         y += distance
     if heading == 'E':
+        for i in range(1, distance):
+            if (x + i, y) in visited:
+                print "Found Twice!", x + i, y, abs(x + i) + abs(y)
+            visited.append((x + i, y))
         x += distance
     if heading == 'S':
+        for i in range(1, distance):
+            if (x, y - i) in visited:
+                print "Found Twice!", x, y - i, abs(x) + abs(y - i)
+            visited.append((x, y - i))
         y -= distance
     if heading == 'W':
+        for i in range(1, distance):
+            if (x - i, y) in visited:
+                print "Found Twice!", x, y, abs(x - i) + abs(y)
+            visited.append((x - i, y))
         x -= distance
 
 print 'Blocks away: %s' % (abs(x) + abs(y))
