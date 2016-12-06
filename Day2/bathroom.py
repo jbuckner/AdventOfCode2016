@@ -1,27 +1,42 @@
 #!/usr/bin/env python
 
-codes = [line.rstrip('\n') for line in open('input.txt')]
+CODES = [line.rstrip('\n') for line in open('input.txt')]
 
+A = 'A'
+B = 'B'
+C = 'C'
+D = 'D'
 
-KEYPAD = [1, 2, 3,
-          4, 5, 6,
-          7, 8, 9]
+# KEYPAD = [0, 0, 0, 0, 0,
+#           0, 1, 2, 3, 0,
+#           0, 4, 5, 6, 0,
+#           0, 7, 8, 9, 0,
+#           0, 0, 0, 0, 0]
 
-current_index = 4  # we start at 5
+KEYPAD = [0,  0,  0,  0,  0,  0,  0,
+          0,  0,  0,  1,  0,  0,  0,
+          0,  0,  2,  3,  4,  0,  0,
+          0,  5,  6,  7,  8,  9,  0,
+          0,  0,  A,  B,  C,  0,  0,
+          0,  0,  0,  D,  0,  0,  0,
+          0,  0,  0,  0,  0,  0,  0]
 
-for code in codes:
+WIDTH = 7
+
+current_index = 22  # we start at 5
+
+for code in CODES:
     for move in code:
         if move == "U":
-            if current_index - 3 >= 0:
-                current_index = current_index - 3
+            destination = current_index - WIDTH
         if move == "R":
-            if current_index not in [2, 5, 8]:
-                current_index = current_index + 1
+            destination = current_index + 1
         if move == "D":
-            if current_index + 3 < 9:
-                current_index = current_index + 3
+            destination = current_index + WIDTH
         if move == "L":
-            if current_index not in [0, 3, 6]:
-                current_index = current_index - 1
+            destination = current_index - 1
+
+        if KEYPAD[destination] != 0:
+            current_index = destination
 
     print KEYPAD[current_index]
