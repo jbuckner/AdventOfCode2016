@@ -50,4 +50,4 @@ for direction in directions:
             visited.append((x - i, y))
         x -= distance
 
-print 'Blocks away: %s' % (abs(x) + abs(y))
+print 'Blocks away:', (abs(x) + abs(y)), visited
