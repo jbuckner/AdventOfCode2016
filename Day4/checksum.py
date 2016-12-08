@@ -30,6 +30,20 @@ def make_sorted_list_from_histogram(histogram):
     values = [value for key, value in histogram.iteritems()]
     return sorted(set(values), reverse=True)
 
+def decrypt_name(encrypted_name, sector_id):
+    shift = sector_id % 26
+    decrypted_name = ''
+    for char in encrypted_name:
+        if char == '-':
+            decrypted_name += ' '
+            continue
+        new_ascii = ord(char) + shift
+        if new_ascii > 122:
+            new_ascii = new_ascii - 26
+        decrypted_name += chr(new_ascii)
+    return decrypted_name
+
+encrypted_names = []
 sector_ids = []
 
 for line in INPUTS:
@@ -82,6 +96,13 @@ for line in INPUTS:
         previous_char = char_check
 
     if is_valid:
+        encrypted_names.append(encrypted_name)
         sector_ids.append(sector)
 
 print sum(sector_ids)
+
+for index in range(0, len(encrypted_names) - 1):
+    encrypted_name = encrypted_names[index]
+    sector_id = sector_ids[index]
+    decrypted_name = decrypt_name(encrypted_name, sector_id)
+    print encrypted_name, sector_id, decrypted_name
