@@ -76,7 +76,7 @@ for line in INPUTS:
         # otherwise, if a previous character's frequency is less than our
         # own, then it's also invalid
         if previous_char is None:
-            if char_frequency and char_frequency != sorted_frequencies[0]:
+            if char_frequency != sorted_frequencies[0]:
                 is_valid = False
                 break
         else:
