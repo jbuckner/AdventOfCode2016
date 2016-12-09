@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-INPUTS = [line.rstrip('\n') for line in open('input2.txt')]
+INPUTS = [line.rstrip('\n') for line in open('input.txt')]
 
 corrected_string = []
 
@@ -22,10 +22,10 @@ code = ''
 
 for histogram in histograms:
     found_char = None
-    compare_val = 0
+    compare_val = 1000
 
     for key, value in histogram.items():
-        if value > compare_val:
+        if value < compare_val:
             compare_val = value
             found_char = key
 
