@@ -6,6 +6,7 @@ INPUTS = [line.rstrip('\n') for line in open('input.txt')]
 
 class LCD:
     unlit_pixel = ' '
+    lit_pixel = '#'
     width = 0
     height = 0
     matrix = []
@@ -39,7 +40,7 @@ class LCD:
     def draw_rect(self, width, height):
         for y in range(0, height):
             for x in range(0, width):
-                self.matrix[y][x] = '#'
+                self.matrix[y][x] = self.lit_pixel
 
     def rotate_column(self, col_x, count):
         top = []
