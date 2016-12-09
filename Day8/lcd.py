@@ -102,31 +102,3 @@ for line in INPUTS:
     time.sleep(.1)
 
 print lcd.lit_pixel_count
-# example
-# lcd = LCD(7, 3)
-# lcd.draw_rect(3, 2)
-# print lcd
-# lcd.rotate_column(1, 1)
-# print lcd
-# lcd.rotate_row(0, 4)
-# print lcd
-# lcd.rotate_column(1, 1)
-# print lcd
-
-# for x in range(0, 25):
-#     lcd.rotate_row(0, 1)
-#     print lcd
-#     time.sleep(.1)
-#
-# for x in range(0, 25):
-#     lcd.rotate_column(0, -1)
-#     print lcd
-#     time.sleep(.1)
-
-# lcd.rotate_column(0, 3)
-#
-# print lcd
-
-# lcd.rotate_column(0, -3)
-#
-# print lcd
