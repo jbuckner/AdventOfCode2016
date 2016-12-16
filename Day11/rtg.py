@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import sys
+import itertools
+import pprint
+
 
 INPUTS = [line.rstrip('\n') for line in open('input2.txt')]
 
@@ -12,14 +14,20 @@ class ExperimentItem:
     def __init__(self, element):
         self.element = element
 
-    def safe_to_move_to_floor_with_items(self, items):
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return '%s %s' % (self.element, self.item_type)
+
+    def is_safe_to_be_on_a_floor_with_items(self, items):
         assert 'should be implemented by subclass'
 
 
 class RTG(ExperimentItem):
     item_type = 'rtg'
 
-    def safe_to_move_to_floor_with_items(self, items):
+    def is_safe_to_be_on_a_floor_with_items(self, items):
         safe = True
         will_have_matching_rtg = False
 
@@ -36,7 +44,7 @@ class RTG(ExperimentItem):
 class Microchip(ExperimentItem):
     item_type = 'microchip'
 
-    def safe_to_move_to_floor_with_items(self, items):
+    def is_safe_to_be_on_a_floor_with_items(self, items):
         safe = True
         will_have_matching_rtg = False
 
@@ -92,10 +100,63 @@ class Elevator:
 
         for item in items_on_floor:
             potential_move = items_that_can_move + items_on_next_floor
-            if item.safe_to_move_to_floor_with_items(potential_move):
+            if item.is_safe_to_be_on_a_floor_with_items(potential_move):
                 items_that_can_move.append(item)
 
         return items_that_can_move
+
+    @property
+    def possible_directions(self):
+        directions = [1, -1]
+
+        if self.floor == 0:
+            directions.remove(-1)
+        if self.floor == len(self.building.floors) - 1:
+            directions.remove(1)
+
+        return directions
+
+    def possible_moves(self):
+        possible_moves = {
+            1: set(),
+            -1: set()
+        }
+
+        items_on_floor = self.building.floors[self.floor].items
+
+        for direction in self.possible_directions:
+            items_on_next_floor = self.building.floors[
+                self.floor + direction].items
+
+            for grouping in itertools.combinations(items_on_floor, 2):
+                potential_move = list(grouping) + items_on_next_floor
+                safe = True
+                for item in grouping:
+                    if not item.is_safe_to_be_on_a_floor_with_items(potential_move):
+                        safe = False
+                if safe:
+                    possible_moves[direction].add(grouping)
+
+            for item in items_on_floor:
+                potential_move = list(items_on_next_floor)
+                potential_move.append(item)
+                safe = True
+                if not item.is_safe_to_be_on_a_floor_with_items(potential_move):
+                    safe = False
+                if safe:
+                    # make sure we can leave other items behind if we only move
+                    # this one item
+                    left_behind = list(items_on_floor)
+                    left_behind.remove(item)
+                    for item in left_behind:
+                        other_items = list(left_behind)
+                        other_items.remove(item)
+                        if not item.is_safe_to_be_on_a_floor_with_items(other_items):
+                            safe = False
+                if safe:
+                    possible_moves[direction].add((item,)) # tuple for consistency
+
+        return possible_moves
 
     def move_items_in_direction(self, items, direction=1):
         new_floor = self.floor + direction
@@ -140,10 +201,17 @@ class Building:
 building = Building()
 print building
 items_to_move = building.elevator.select_items_to_move()
-print items_to_move
+print "POSSIBLE MOVES"
+pprint.pprint(building.elevator.possible_moves())
 building.elevator.move_items_in_direction(items_to_move)
+print "NOW"
 print building
+print "POSSIBLE MOVES"
+pprint.pprint(building.elevator.possible_moves())
 items_to_move = building.elevator.select_items_to_move()
-print items_to_move
 building.elevator.move_items_in_direction(items_to_move)
+print "NOW"
 print building
+print "POSSIBLE MOVES"
+a = building.elevator.possible_moves()
+pprint.pprint(a)
