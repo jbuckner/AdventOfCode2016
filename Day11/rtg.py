@@ -215,30 +215,15 @@ class Elevator:
             'direction': direction,
             'items': items
         }
-        # self.previous_moves.append(last_move)
         self.previous_moves = [last_move]
         new_floor = self.floor + direction
-        print 'moving items to floor', self.floor, new_floor, items
         self.moves += 1
-        print 'before move'
-        print self.building
         for item in items:
             self.building.floors[new_floor].add_item(item)
             self.building.floors[self.floor].remove_item(item)
         self.floor += direction
-        print 'after move'
-        print self.building
-
-    # def move_items_from_floor_to_floor(self, items, floor_from, floor_to):
-    #     print 'moving items to floor', self.floor, items, floor_from, floor_to
-    #     self.moves += 1
-    #     for item in items:
-    #         self.building.floors[floor_to].add_item(item)
-    #         self.building.floors[floor_from].remove_item(item)
-    #     self.floor += floor_to
 
     def get_item_of_type_from_floor(self, item_type, element):
-        print 'get_item_of_type_from_floor', item_type, element, self.floor
         return self.building.floors[self.floor].get_item_of_type(
             item_type, element)
 
@@ -264,6 +249,13 @@ class Building:
                 building_str += '*'
             building_str += '\n'
         return building_str
+
+    # handles names and IDs and such
+    def make_a_copy(self):
+        new_building = copy.deepcopy(self)
+        new_building.created_by = self.name
+        new_building.name += 1
+        return new_building
 
     @property
     def all_items_are_on_top_floor(self):
@@ -291,71 +283,42 @@ class Building:
         self.floors = [self.floor0, self.floor1, self.floor2, self.floor3]
         self.elevator = Elevator(building=self)
 
-    def start(self):
-        print ""
-        print "Start"
-        print ""
+    def make_move(self):
         print self
-        global move_count
-        done = self.all_items_are_on_top_floor
-        # pdb.set_trace()
-        while not done or move_count < 20:
-            move_count += 1
-            possible_moves = self.elevator.possible_moves()
-            print 'Possible Moves, Building %s' % self.name
-            if len(possible_moves[-1]) == 0 and len(possible_moves[1]) == 0:
-                done = True
-                return
-            pprint.pprint(possible_moves)
-            for direction, moves in possible_moves.iteritems():
-                print 'direction, moves', direction, moves
-                for move in moves:
-                    print 'building %s is trying move %s' % (self.name, move)
-                    new_building = copy.deepcopy(self)
-                    global building_id
-                    building_id += 1
-                    new_building.name = building_id
-                    new_building.created_by = self.name
 
-                    items_to_move = []
-                    for item in move:
-                        item_to_move = new_building.elevator.get_item_of_type_from_floor(item.item_type, item.element)
-                        if item_to_move:
-                            items_to_move.append(item_to_move)
-                    # print 'items to move', items_to_move, direction
-                    new_building.elevator.move_items_in_direction(items_to_move, direction)
-                    # print 'after move'
-                    print new_building
+        if self.all_items_are_on_top_floor:
+            print 'SOLUTION FOUND, MOVES:', self.elevator.moves
+            # print self
+            return True
 
-                    if new_building.all_items_are_on_top_floor:
-                        done = True
-                    else:
-                        new_building.start()
-                    # if self.all_items_are_on_top_floor:
-                    #     done = True
+        possible_moves = self.elevator.possible_moves()
+        up_moves = possible_moves[1]
+        down_moves = possible_moves[-1]
+        total_possible_moves = len(up_moves) + len(down_moves)
+        solutions_found = 0
+        solutions = []
 
+        if len(up_moves) == 0 and len(down_moves) == 0:
+            print 'no moves'
+            return False
+
+        for direction, moves in possible_moves.iteritems():
+            for items in reversed(list(moves)):
+                # print 'building %s, trying move %s of %s' % (self.name, items, possible_moves)
+                new_building = self.make_a_copy()
+
+                items_to_move = []
+                for item in items:
+                    item_to_move = new_building.elevator.get_item_of_type_from_floor(item.item_type, item.element)
+                    if item_to_move:
+                        items_to_move.append(item_to_move)
+                new_building.elevator.move_items_in_direction(items_to_move, direction)
+
+                if new_building.make_move():
+                    return True
+                else:
+                    continue
 
 
 building = Building()
-print building
-building.start()
-print building
-# items_to_move = building.elevator.select_items_to_move()
-# print "POSSIBLE MOVES"
-# pprint.pprint(building.elevator.possible_moves())
-# building.elevator.move_items_in_direction(items_to_move)
-# print "NOW"
-# print building
-# new_building = copy.deepcopy(building)
-# print "NEW BUILDING"
-# print new_building
-# print new_building.elevator.floor
-# print "POSSIBLE MOVES"
-# pprint.pprint(building.elevator.possible_moves())
-# items_to_move = building.elevator.select_items_to_move()
-# building.elevator.move_items_in_direction(items_to_move)
-# print "NOW"
-# print building
-# print "POSSIBLE MOVES"
-# a = building.elevator.possible_moves()
-# pprint.pprint(a)
+building.make_move()
