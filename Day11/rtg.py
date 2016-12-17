@@ -3,11 +3,13 @@
 import itertools
 import pprint
 import copy
+import pdb
 
 
 INPUTS = [line.rstrip('\n') for line in open('input2.txt')]
 
 move_count = 0
+building_id = 0
 
 
 class ExperimentItem:
@@ -79,8 +81,14 @@ class Floor:
         self.items.append(item)
 
     def remove_item(self, item):
-        print item, self.items, item in self.items
+        # print item, self.items, item in self.items
         self.items.remove(item)
+
+    def get_item_of_type(self, item_type, element):
+        for item in self.items:
+            if item.item_type == item_type and item.element == element:
+                return item
+        return None
 
 
 class Elevator:
@@ -88,12 +96,14 @@ class Elevator:
     floor = 0
     items = []
     moves = 0
+    previous_moves = []
 
     def __init__(self, building):
         self.floor = 0
         self.moves = 0
         self.building = building
         self.items = []
+        self.previous_moves = []
 
     @property
     def can_move(self):
@@ -128,13 +138,17 @@ class Elevator:
 
     def possible_moves(self):
         possible_moves = {
-            1: set(),
-            -1: set()
+            -1: set(),
+            1: set()
         }
 
         items_on_floor = self.building.floors[self.floor].items
 
+        # print 'previous_moves', self.previous_moves
+
         for direction in self.possible_directions:
+            possible_moves[direction] = set()
+
             items_on_next_floor = self.building.floors[
                 self.floor + direction].items
 
@@ -144,6 +158,22 @@ class Elevator:
                 for item in grouping:
                     if not item.is_safe_to_be_on_a_floor_with_items(potential_move):
                         safe = False
+                # we don't want to replay the last move
+                if safe:
+                    # print 'last move grouping', self.last_move
+                    for prev_move in self.previous_moves:
+                        prev_move_items = prev_move['items']
+                        if len(prev_move_items) < 2:
+                            continue
+                        # print 'last move single', self.last_move, direction, self.last_move['direction'] * -1, item, item == self.last_move['items']
+                        # print id(self.last_move['items']), id(i?tem)
+                        if (direction == prev_move['direction'] * -1):
+                            # print 'prev move', grouping, prev_move
+                            if ((grouping[0] == prev_move_items[0] or
+                                 grouping[0] == prev_move_items[1]) and
+                                (grouping[1] == prev_move_items[0] or
+                                 grouping[1] == prev_move_items[1])):
+                                safe = False
                 if safe:
                     possible_moves[direction].add(grouping)
 
@@ -164,21 +194,58 @@ class Elevator:
                         # print 'other_items', item, left_behind_item, other_items, left_behind
                         if not left_behind_item.is_safe_to_be_on_a_floor_with_items(other_items):
                             safe = False
+
+                # item_entry = item  # tuple for consistency
+
+                # we don't want to replay and previous moves
                 if safe:
-                    possible_moves[direction].add((item,)) # tuple for consistency
+                    for prev_move in self.previous_moves:
+                        # print item, prev_move['items'], item == prev_move['items']
+                        if (direction == prev_move['direction'] * -1 and
+                            [item] == prev_move['items']):
+                            safe = False
+
+                if safe:
+                    possible_moves[direction].add((item,))
 
         return possible_moves
 
     def move_items_in_direction(self, items, direction=1):
+        last_move = {
+            'direction': direction,
+            'items': items
+        }
+        # self.previous_moves.append(last_move)
+        self.previous_moves = [last_move]
         new_floor = self.floor + direction
+        print 'moving items to floor', self.floor, new_floor, items
         self.moves += 1
+        print 'before move'
+        print self.building
         for item in items:
             self.building.floors[new_floor].add_item(item)
             self.building.floors[self.floor].remove_item(item)
         self.floor += direction
+        print 'after move'
+        print self.building
+
+    # def move_items_from_floor_to_floor(self, items, floor_from, floor_to):
+    #     print 'moving items to floor', self.floor, items, floor_from, floor_to
+    #     self.moves += 1
+    #     for item in items:
+    #         self.building.floors[floor_to].add_item(item)
+    #         self.building.floors[floor_from].remove_item(item)
+    #     self.floor += floor_to
+
+    def get_item_of_type_from_floor(self, item_type, element):
+        print 'get_item_of_type_from_floor', item_type, element, self.floor
+        return self.building.floors[self.floor].get_item_of_type(
+            item_type, element)
 
 
 class Building:
+    created_by = None
+    name = None
     floor0 = floor1 = floor2 = floor3 = None
     floors = []
     elevator = None
@@ -188,8 +255,8 @@ class Building:
         self.reset()
 
     def __str__(self):
-        building_str = ''
-        for floor in reversed(building.floors):
+        building_str = 'Building %s, created by: %s\n' % (self.name, self.created_by)
+        for floor in reversed(self.floors):
             building_str += 'Floor %s: ' % floor.level
             for item in floor.items:
                 building_str += str(item) + ', '
@@ -207,6 +274,8 @@ class Building:
         return top_heavy
 
     def reset(self):
+        self.name = building_id
+
         self.floor0 = Floor(building=self, level=1)
         self.floor0.items.append(Microchip('hydrogen'))
         self.floor0.items.append(Microchip('lithium'))
@@ -223,20 +292,41 @@ class Building:
         self.elevator = Elevator(building=self)
 
     def start(self):
+        print ""
+        print "Start"
+        print ""
+        print self
         global move_count
         done = self.all_items_are_on_top_floor
-        while not done or move_count < 50:
+        # pdb.set_trace()
+        while not done or move_count < 20:
+            move_count += 1
             possible_moves = self.elevator.possible_moves()
-            for k, v in possible_moves.iteritems():
-                if done:
-                    break
-                for move in v:
-                    if done:
-                        break
-                    move_count += 1
-                    self.elevator.move_items_in_direction(move, k)
+            print 'Possible Moves, Building %s' % self.name
+            if len(possible_moves[-1]) == 0 and len(possible_moves[1]) == 0:
+                done = True
+                return
+            pprint.pprint(possible_moves)
+            for direction, moves in possible_moves.iteritems():
+                print 'direction, moves', direction, moves
+                for move in moves:
+                    print 'building %s is trying move %s' % (self.name, move)
                     new_building = copy.deepcopy(self)
+                    global building_id
+                    building_id += 1
+                    new_building.name = building_id
+                    new_building.created_by = self.name
+
+                    items_to_move = []
+                    for item in move:
+                        item_to_move = new_building.elevator.get_item_of_type_from_floor(item.item_type, item.element)
+                        if item_to_move:
+                            items_to_move.append(item_to_move)
+                    # print 'items to move', items_to_move, direction
+                    new_building.elevator.move_items_in_direction(items_to_move, direction)
+                    # print 'after move'
                     print new_building
+
                     if new_building.all_items_are_on_top_floor:
                         done = True
                     else:
@@ -249,6 +339,7 @@ class Building:
 building = Building()
 print building
 building.start()
+print building
 # items_to_move = building.elevator.select_items_to_move()
 # print "POSSIBLE MOVES"
 # pprint.pprint(building.elevator.possible_moves())
