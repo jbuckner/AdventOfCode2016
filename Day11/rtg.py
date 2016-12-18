@@ -5,6 +5,7 @@ import pprint
 import copy
 import pdb
 
+from datetime import datetime
 
 INPUTS = [line.rstrip('\n') for line in open('input2.txt')]
 
@@ -21,6 +22,15 @@ class ExperimentItem:
 
     def __repr__(self):
         return str(self)
+
+    def __hash__(self):
+        return hash('%s%s' % (self.element, self.item_type))
+
+    def __eq__(self, other):
+        # print self, other
+        # print self.element == other.element, self.item_type == other.item_type
+        return (self.element == other.element and
+                self.item_type == other.item_type)
 
     def __str__(self):
         return '%s %s' % (self.element, self.item_type)
@@ -72,6 +82,25 @@ class Floor:
         self.items = []
         self.building = building
         self.level = level
+
+    # def __hash__(self):
+    #     items_hash = [hash(item) for item in self.items]
+    #     return hash('%s%s%s' % (self.level, len(self.items), items_hash))
+
+    def __eq__(self, other):
+        if self.level != other.level:
+            return False
+        if len(self.items) != len(other.items):
+            return False
+        for item in self.items:
+            found = False
+            for other_item in other.items:
+                if item == other_item:
+                    found = True
+            if not found:
+                return False
+        # print 'equals', self, other
+        return True
 
     @property
     def is_empty(self):
@@ -175,6 +204,7 @@ class Elevator:
                                  grouping[1] == prev_move_items[1])):
                                 safe = False
                 if safe:
+                    # print possible_moves, grouping, direction
                     possible_moves[direction].add(grouping)
 
             for item in items_on_floor:
@@ -237,7 +267,20 @@ class Building:
     move_count = 0
 
     def __init__(self):
-        self.reset()
+        # self.sample()
+        self.real_data()
+
+    def __eq__(self, other):
+        if self.elevator.floor != other.elevator.floor:
+            return False
+        for floor in self.floors:
+            matches = False
+            for other_floor in other.floors:
+                if floor == other_floor:
+                    matches = True
+            if not matches:
+                return False
+        return True
 
     def __str__(self):
         building_str = 'Building %s, created by: %s\n' % (self.name, self.created_by)
@@ -265,7 +308,7 @@ class Building:
                 top_heavy = False
         return top_heavy
 
-    def reset(self):
+    def sample(self):
         self.name = building_id
 
         self.floor0 = Floor(building=self, level=1)
@@ -283,28 +326,47 @@ class Building:
         self.floors = [self.floor0, self.floor1, self.floor2, self.floor3]
         self.elevator = Elevator(building=self)
 
-    def make_move(self):
-        print self
+    def real_data(self):
+        self.name = building_id
+
+        self.floor0 = Floor(building=self, level=1)
+        self.floor0.items.append(RTG('promethium'))
+        self.floor0.items.append(Microchip('promethium'))
+
+        self.floor1 = Floor(building=self, level=2)
+        self.floor1.items.append(RTG('cobalt'))
+        self.floor1.items.append(RTG('curium'))
+        self.floor1.items.append(RTG('ruthenium'))
+        self.floor1.items.append(RTG('plutonium'))
+
+        self.floor2 = Floor(building=self, level=3)
+        self.floor2.items.append(Microchip('cobalt'))
+        self.floor2.items.append(Microchip('curium'))
+        self.floor2.items.append(Microchip('ruthenium'))
+        self.floor2.items.append(Microchip('plutonium'))
+
+        self.floor3 = Floor(building=self, level=4)
+
+        self.floors = [self.floor0, self.floor1, self.floor2, self.floor3]
+        self.elevator = Elevator(building=self)
+
+    def make_move(self, depth=1):
+        if self.elevator.moves > depth:
+            return False
 
         if self.all_items_are_on_top_floor:
             print 'SOLUTION FOUND, MOVES:', self.elevator.moves
-            # print self
-            return True
+            return self
 
         possible_moves = self.elevator.possible_moves()
         up_moves = possible_moves[1]
         down_moves = possible_moves[-1]
-        total_possible_moves = len(up_moves) + len(down_moves)
-        solutions_found = 0
-        solutions = []
 
         if len(up_moves) == 0 and len(down_moves) == 0:
-            print 'no moves'
             return False
 
         for direction, moves in possible_moves.iteritems():
-            for items in reversed(list(moves)):
-                # print 'building %s, trying move %s of %s' % (self.name, items, possible_moves)
+            for items in list(moves):
                 new_building = self.make_a_copy()
 
                 items_to_move = []
@@ -314,11 +376,31 @@ class Building:
                         items_to_move.append(item_to_move)
                 new_building.elevator.move_items_in_direction(items_to_move, direction)
 
-                if new_building.make_move():
-                    return True
+                # don't go back down this path
+                if new_building in buildings_seen:
+                    print 'path previously visited'
+                    # print new_building
+                    continue
+
+                buildings_seen.append(new_building)
+
+                if new_building.make_move(depth):
+                    return new_building
                 else:
                     continue
 
 
 building = Building()
-building.make_move()
+buildings_seen = []
+
+for x in range(12, 100):
+    buildings_seen = []
+    buildings_seen.append(building)
+    print '*************'
+    print 'start time: %s, depth: %s' % (str(datetime.now()), x)
+    print '*************'
+    success = building.make_move(x)
+    if success:
+        print 'found at %s, depth: %s', str(datetime.now()), x
+        print success
+        break
