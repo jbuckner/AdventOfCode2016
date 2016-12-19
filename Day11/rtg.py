@@ -27,8 +27,6 @@ class ExperimentItem:
         return hash('%s%s' % (self.element, self.item_type))
 
     def __eq__(self, other):
-        # print self, other
-        # print self.element == other.element, self.item_type == other.item_type
         return (self.element == other.element and
                 self.item_type == other.item_type)
 
@@ -365,6 +363,8 @@ class Building:
         if len(up_moves) == 0 and len(down_moves) == 0:
             return False
 
+        buildings_to_test = []
+
         for direction, moves in possible_moves.iteritems():
             for items in list(moves):
                 new_building = self.make_a_copy()
@@ -376,24 +376,29 @@ class Building:
                         items_to_move.append(item_to_move)
                 new_building.elevator.move_items_in_direction(items_to_move, direction)
 
+                if new_building.all_items_are_on_top_floor:
+                    print "FOUND!", new_building.elevator.moves
+                    return new_building
+
                 # don't go back down this path
                 if new_building in buildings_seen:
-                    print 'path previously visited'
-                    # print new_building
                     continue
 
                 buildings_seen.append(new_building)
 
-                if new_building.make_move(depth):
-                    return new_building
-                else:
-                    continue
+                buildings_to_test.append(new_building)
+
+        for building in buildings_to_test:
+            if building.make_move(depth):
+                return building
+            else:
+                continue
 
 
 building = Building()
 buildings_seen = []
 
-for x in range(12, 100):
+for x in range(1, 100):
     buildings_seen = []
     buildings_seen.append(building)
     print '*************'
